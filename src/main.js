@@ -5,6 +5,7 @@ const fs = require('fs/promises');
 const { getUserId, getHighlights } = require('./scraper');
 const { saveHighlights, loadIndex } = require('./storage');
 const { downloadHighlights, estimateStorage } = require('./downloader');
+const { deleteHighlights } = require('./deleter');
 const config = require('../config.json');
 
 const rl = readline.createInterface({
@@ -25,7 +26,7 @@ async function scrapeAndStore() {
         const savedPaths = await saveHighlights(config.streamerName, highlights);
         console.log(`Saved highlights in following locations:`);
         savedPaths.forEach(path => console.log(`- ${path}`));
-        
+
         return highlights;
     } catch (error) {
         console.error('Error:', error.message);
@@ -39,7 +40,7 @@ async function scrapeAndStore() {
 async function loadAllHighlights() {
     const streamerDir = path.join(config.outputPath, config.streamerName);
     const index = await loadIndex(streamerDir);
-    
+
     let allHighlights = [];
     for (const filepath of index.paths) {
         const fullPath = path.join(streamerDir, filepath);
@@ -64,13 +65,109 @@ async function filterHighlightsByDate(highlights, year, month = null) {
     });
 }
 
+async function filterHighlightsByTimeframe(highlights, startDate, endDate) {
+    const start = new Date(`${startDate}-01`);
+    const end = new Date(`${endDate}-31`);
+
+    return highlights.filter(highlight => {
+        const date = new Date(highlight.created_at);
+        return date >= start && date <= end;
+    });
+}
+
+async function handleDelete() {
+    console.log('\nDelete options:');
+    console.log('1. Delete highlights from a specific year');
+    console.log('2. Delete highlights from a specific year and month');
+    console.log('3. Delete highlights in a specific timeframe');
+
+    const choice = await question('Enter your choice (1-3): ');
+
+    const highlights = await loadAllHighlights();
+    if (highlights.length === 0) {
+        console.log('No highlights found. Make sure to scrape the highlights first.');
+        return;
+    }
+
+    let selectedHighlights = [];
+
+    const years = [...new Set(highlights.map(h => new Date(h.created_at).getFullYear()))].sort();
+    console.log('\nAvailable years:', years.join(', '));
+
+    if (choice === '1' || choice === '2') {
+        const year = parseInt(await question('Enter year: '));
+        if (!years.includes(year)) {
+            console.log('No highlights found for that year.');
+            return;
+        }
+
+        if (choice === '2') {
+            const monthsInYear = [...new Set(highlights
+                .filter(h => new Date(h.created_at).getFullYear() === year)
+                .map(h => new Date(h.created_at).getMonth() + 1))]
+                .sort((a, b) => a - b);
+
+            console.log('\nAvailable months:', monthsInYear.join(', '));
+            const month = parseInt(await question('Enter month (1-12): '));
+            if (!monthsInYear.includes(month)) {
+                console.log('No highlights found for that month.');
+                return;
+            }
+
+            selectedHighlights = await filterHighlightsByDate(highlights, year, month);
+        } else {
+            selectedHighlights = await filterHighlightsByDate(highlights, year);
+        }
+    } else if (choice === '3') {
+        console.log('\nEnter start date (e.g., 2022-01 for January 2022):');
+        const startDate = await question('Start: ');
+        console.log('Enter end date (e.g., 2022-08 for August 2022):');
+        const endDate = await question('End: ');
+
+        selectedHighlights = await filterHighlightsByTimeframe(highlights, startDate, endDate);
+    }
+
+    if (selectedHighlights.length === 0) {
+        console.log('No highlights found in the selected timeframe.');
+        return;
+    }
+
+    // First warning
+    console.log(`\nWARNING: You are about to delete ${selectedHighlights.length} highlights!`);
+    console.log('This action cannot be undone!');
+    const firstConfirm = await question('Are you sure you want to continue? (y/N): ');
+
+    if (firstConfirm.toLowerCase() !== 'y') {
+        console.log('Deletion cancelled.');
+        return;
+    }
+
+    // Second warning
+    console.log('\nFinal confirmation required.');
+    console.log(`Type the number of highlights (${selectedHighlights.length}) to confirm deletion:`);
+    const secondConfirm = await question('Number of highlights: ');
+
+    if (parseInt(secondConfirm) !== selectedHighlights.length) {
+        console.log('Number does not match. Deletion cancelled.');
+        return;
+    }
+
+    try {
+        const deletedCount = await deleteHighlights(selectedHighlights);
+        console.log(`\nSuccessfully deleted ${deletedCount} highlights.`);
+    } catch (error) {
+        console.error('Failed to delete highlights:', error.message);
+    }
+}
+
 async function main() {
     try {
         console.log('What would you like to do?');
         console.log('1. Scrape new highlights');
         console.log('2. Download scraped highlights');
-        
-        const choice = await question('Enter your choice (1 or 2): ');
+        console.log('3. Delete highlights');
+
+        const choice = await question('Enter your choice (1-3): ');
 
         if (choice === '1') {
             await scrapeAndStore();
@@ -79,41 +176,41 @@ async function main() {
             console.log('1. Download every highlight');
             console.log('2. Download highlights from a specific year');
             console.log('3. Download highlights from a specific year and month');
-            
+
             const downloadChoice = await question('Enter your choice (1-3): ');
-            
+
             const highlights = await loadAllHighlights();
-            
+
             if (highlights.length === 0) {
                 console.log('No highlights found. Make sure to scrape the highlights first.');
                 return;
             }
 
             let selectedHighlights = highlights;
-            
+
             if (downloadChoice === '2' || downloadChoice === '3') {
                 const years = [...new Set(highlights.map(h => new Date(h.created_at).getFullYear()))].sort();
                 console.log('\nAvailable years:', years.join(', '));
-                
+
                 const year = parseInt(await question('Enter year (e.g., 2024): '));
                 if (!years.includes(year)) {
                     console.log('No highlights found for that year.');
                     return;
                 }
-                
+
                 if (downloadChoice === '3') {
                     const monthsInYear = [...new Set(highlights
                         .filter(h => new Date(h.created_at).getFullYear() === year)
                         .map(h => new Date(h.created_at).getMonth() + 1))]
                         .sort((a, b) => a - b);
-                    
+
                     console.log('\nAvailable months:', monthsInYear.join(', '));
                     const month = parseInt(await question('Enter month (1-12): '));
                     if (!monthsInYear.includes(month)) {
                         console.log('No highlights found for that month.');
                         return;
                     }
-                    
+
                     selectedHighlights = await filterHighlightsByDate(highlights, year, month);
                 } else {
                     selectedHighlights = await filterHighlightsByDate(highlights, year);
@@ -128,7 +225,7 @@ async function main() {
             const estimatedGB = await estimateStorage(selectedHighlights);
             console.log(`\nFound ${selectedHighlights.length} highlights`);
             console.log(`Estimated storage needed: ${estimatedGB.toFixed(1)}GB`);
-            
+
             console.log('\nWARNING: Please make sure you have enough storage space available');
             const confirm = await question('Do you want to continue with the downloading? (y/n): ');
             if (confirm.toLowerCase() !== 'y') {
@@ -137,6 +234,8 @@ async function main() {
             }
 
             await downloadHighlights(selectedHighlights, config.outputPath);
+        } else if (choice === '3') {
+            await handleDelete();
         }
     } catch (error) {
         console.error('Something went wrong:', error);
