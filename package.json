@@ -1,14 +1,14 @@
 {
-  "name": "ttv-highlight-scraper",
+  "name": "ttv-highlight-tools",
   "version": "1.0.0",
   "description": "Get a list of every Twitch highlight on a channel",
-  "homepage": "https://github.com/rico-vz/ttv-highlight-scraper#readme",
+  "homepage": "https://github.com/rico-vz/ttv-highlight-tools#readme",
   "bugs": {
-    "url": "https://github.com/rico-vz/ttv-highlight-scraper/issues"
+    "url": "https://github.com/rico-vz/ttv-highlight-tools/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rico-vz/ttv-highlight-scraper.git"
+    "url": "git+https://github.com/rico-vz/ttv-highlight-tools.git"
   },
   "license": "MIT",
   "author": "Rico van Zelst",
