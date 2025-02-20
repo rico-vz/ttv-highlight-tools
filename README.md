@@ -87,3 +87,20 @@ TTV Highlight Tools uses the Twitch API, for this you will need a Twitch OAuth t
 6. You will now see your Twitch OAuth token. Copy this value and keep it safe.
 ![Twitch oauth response](https://i.imgur.com/ExjLJ67.png)  
 ***Do not show this token to anyone***
+
+### Getting your Personal Auth Token
+
+This is only needed if you have highlights marked as "Subscribers Only" or "Private" and you want to download them.  
+If this is not the case, just ignore this and use the token generated above.
+
+1. Open `config.json` and enable personal auth usage by setting `personalAuthEnabled` to `true`
+2. Get your personal auth token using one of these two tutorials:
+
+- [[Text] How to get your Twitch OAuth token](https://streamlink.github.io/cli/plugins/twitch.html#authentication)
+- [[Video] How to get your Twitch OAuth token](https://www.youtube.com/watch?v=1MBsUoFGuls)
+
+3. Paste the token in the `.env` file as `PERSONAL_AUTH_TOKEN`
+
+## How to fix "Highlight download failed with code 3762504530"
+
+This error happens when the highlight is marked as "Subscribers Only" or "Private" and you try to download it without a personal auth token. Follow the steps above to enable personal auth usage and get your personal auth token.

@@ -1,13 +1,14 @@
 {
     "clientId": "21mgxv714yxzpzkwrm9elag012jicb",
     "outputPath": "./output/",
-    "streamerName": "Squeex",
+    "streamerName": "channel_name",
     "downloader": {
         "twitchDownloaderCLIPath": "C:\\Users\\User\\Documents\\TwitchDownloader\\TwitchDownloaderCLI.exe",
         "ffmpegPath": "C:\\.bin\\ffmpeg.exe",
         "output": "mp4",
         "downloadChat": true,
         "chatCompression": "Gzip",
-        "chatEmbedImages": false
+        "chatEmbedImages": false,
+        "personalAuthEnabled": false
     }
 }
