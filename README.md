@@ -21,7 +21,7 @@ Created to help Twitch streamers with the sudden [100 hour storage limit for Hig
 - [Node.js](https://nodejs.org/)
 - [TwitchDownloaderCLI](https://github.com/lay295/TwitchDownloader) (for downloading highlights)
 - [FFmpeg](https://ffmpeg.org/download.html) (Required for TwitchDownloaderCLI)
-- Twitch auth token
+- [Twitch auth token](https://github.com/rico-vz/ttv-highlight-tools?tab=readme-ov-file#generating-a-twitch-auth-token)
 
 ## Getting Started
 
