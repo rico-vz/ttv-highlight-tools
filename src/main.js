@@ -129,7 +129,7 @@ async function main() {
             console.log(`\nFound ${selectedHighlights.length} highlights`);
             console.log(`Estimated storage needed: ${estimatedGB.toFixed(1)}GB`);
             
-            console.log('\nWARNING: Please ake sure you have enough storage space available');
+            console.log('\nWARNING: Please make sure you have enough storage space available');
             const confirm = await question('Do you want to continue with the downloading? (y/n): ');
             if (confirm.toLowerCase() !== 'y') {
                 console.log('Download cancelled.');
