@@ -122,12 +122,38 @@ async function estimateStorage(highlights) {
 }
 
 async function downloadHighlights(highlights, basePath) {
+    const { loadDownloadState, saveDownloadState, scanDownloadedHighlights } = require('./storage');
+
+    if (highlights.length === 0) {
+        console.log('No highlights to download');
+        return;
+    }
+
+    const streamerName = highlights[0].user_name;
     let downloaded = 0;
     const total = highlights.length;
 
-    highlights.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    let downloadedIds = await loadDownloadState(streamerName);
+    const scannedIds = await scanDownloadedHighlights(streamerName);
+    downloadedIds = [...new Set([...downloadedIds, ...scannedIds])];
 
-    for (const highlight of highlights) {
+    await saveDownloadState(streamerName, downloadedIds);
+
+    // Filter out highlights we alrdy got
+    const remainingHighlights = highlights.filter(h => !downloadedIds.includes(h.id));
+
+    console.log(`Found ${highlights.length} highlights in total`);
+    console.log(`${highlights.length - remainingHighlights.length} highlights already downloaded`);
+    console.log(`Will download ${remainingHighlights.length} remaining highlights`);
+
+    if (remainingHighlights.length === 0) {
+        console.log('All highlights have already been downloaded');
+        return;
+    }
+
+    remainingHighlights.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+    for (const highlight of remainingHighlights) {
         const date = new Date(highlight.created_at);
         const outputDir = path.join(
             basePath,
@@ -139,8 +165,12 @@ async function downloadHighlights(highlights, basePath) {
 
         try {
             await downloadHighlight(highlight, outputDir);
+            downloadedIds.push(highlight.id);
+
+            await saveDownloadState(highlight.user_name, downloadedIds);
+
             downloaded++;
-            console.log(`Progress: ${downloaded}/${total} (${Math.round(downloaded / total * 100)}%)`);
+            console.log(`Progress: ${downloaded}/${remainingHighlights.length} (${Math.round(downloaded / remainingHighlights.length * 100)}%)`);
         } catch (error) {
             console.error(`Failed to download ${highlight.id}:`, error);
         }
